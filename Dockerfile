@@ -19,5 +19,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 5000
-CMD ["node", "server.js"] 
+CMD ["node", "server.js"]
+CMD ["python","fraud_api.py"]
 # Or "python app.py" depending on which one starts your main process
