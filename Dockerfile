@@ -10,6 +10,9 @@ WORKDIR /app
 # Copy dependency files
 COPY package*.json ./
 COPY requirements.txt ./
+COPY start.sh .
+
+RUN chmod +x start.sh
 
 # Install dependencies for both
 RUN npm install
@@ -19,6 +22,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 5000
-CMD ["node", "server.js"]
-CMD ["python","fraud_api.py"]
+CMD ["./start.sh"]
 # Or "python app.py" depending on which one starts your main process
