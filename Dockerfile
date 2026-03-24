@@ -7,20 +7,22 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install
 
 WORKDIR /app
 
-# Copy dependency files
+# 1. Copy dependency files first (for faster caching)
 COPY package*.json ./
 COPY requirements.txt ./
-COPY start.sh .
 
-RUN chmod +x start.sh
-
-# Install dependencies for both
+# 2. Install dependencies
 RUN npm install
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your code (ML files, Node scripts, Gemini logic)
+# 3. Copy the rest of the code (including start.sh)
 COPY . .
 
+# 4. CRITICAL: Fix permissions and Line Endings
+# 'sed' removes Windows hidden characters (\r) just in case
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
+
 EXPOSE 5000
-CMD ["./start.sh"]
-# Or "python app.py" depending on which one starts your main process
+
+# 5. Use the full path to the shell
+CMD ["/bin/sh", "./start.sh"]
