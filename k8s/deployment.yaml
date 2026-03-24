@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shopeasy-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: shopeasy-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+        env:
+          - name: DB_HOST
+            value: "postgres-service" # Matches the DB service name
+          - name: DB_USER
+            value: "reshmi_admin"
+          - name: GEMINI_API_KEY
+            value: "your_key_here"
