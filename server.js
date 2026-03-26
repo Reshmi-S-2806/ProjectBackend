@@ -33,14 +33,28 @@ function generateFraudFeatures(amount) {
 }
 
 // PostgreSQL connection pool
+// const pool = new Pool({
+//     user: process.env.DB_USER,
+//     host: process.env.DB_HOST,
+//     database: process.env.DB_NAME,
+//     password: process.env.DB_PASSWORD,
+//     port: process.env.DB_PORT
+// });
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false // Required for most cloud providers like Supabase/Render/Heroku
+    }
 });
 
+// Test the connection
+pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+        console.error('Connection error', err.stack);
+    } else {
+        console.log('Connected to Supabase at:', res.rows[0].now);
+    }
+});
 // Email transporter
 const transporter = nodemailer.createTransport({
     service: 'gmail',
