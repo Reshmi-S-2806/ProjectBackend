@@ -25,3 +25,5 @@ spec:
             value: "reshmi_admin"
           - name: GEMINI_API_KEY
             value: "your_key_here"
+          - name: DATABASE_URL
+            value: postgresql://postgres:Reshmi&&2004@db.cjdynhzbzmqthxkiyvpu.supabase.co:5432/postgres
