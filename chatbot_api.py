@@ -9,13 +9,14 @@ with open("faq.json", "r") as f:
     faq_data = json.load(f)
 
 # PostgreSQL connection
+# Update this in chatbot_api.py
 conn = psycopg2.connect(
-    host="localhost",
-    database="shopeasy",
-    user="postgres",
-    password="root"
+    host="aws-1-ap-northeast-1.pooler.supabase.com",
+    database="postgres",
+    user="postgres.cjdynhzbzmqthxkiyvpu",
+    password="Reshmi&&2004",
+    port="6543"
 )
-
 cursor = conn.cursor()
 
 
