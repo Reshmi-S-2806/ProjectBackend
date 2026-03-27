@@ -26,4 +26,4 @@ spec:
           - name: GEMINI_API_KEY
             value: "your_key_here"
           - name: DATABASE_URL
-            value: postgresql://postgres:Reshmi&&2004@db.cjdynhzbzmqthxkiyvpu.supabase.co:5432/postgres
+            value: "postgresql://postgres.cjdynhzbzmqthxkiyvpu:Reshmi&&2004@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres"
