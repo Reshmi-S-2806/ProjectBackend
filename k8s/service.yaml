@@ -8,6 +8,6 @@ spec:
   ports:
     - protocol: TCP
       port: 5000       # Internal Cluster Port
-      targetPort: 5000 # Port inside your Container
+      targetPort: 3000 # Port inside your Container
       nodePort: 30002  # THE EXTERNAL PORT for your browser (30000-32767)
   type: NodePort       # Changed from ClusterIP to NodePort
