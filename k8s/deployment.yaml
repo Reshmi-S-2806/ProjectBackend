@@ -1,3 +1,4 @@
+# 1. NODE.JS BACKEND DEPLOYMENT
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,26 +20,60 @@ spec:
         ports:
         - containerPort: 5000
         env:
-          - name: DB_HOST
-            value: "postgres-service" # Matches the DB service name
-          - name: DB_USER
-            value: "reshmi_admin"
           - name: GEMINI_API_KEY
-            value: "your_key_here"
+            value: "your_gemini_key_here"
           - name: DATABASE_URL
             value: "postgresql://postgres.cjdynhzbzmqthxkiyvpu:Reshmi&&2004@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres"
+          # IMPORTANT: Tell Node where to find the Python services
+          - name: FRAUD_API_URL
+            value: "http://fraud-service:5001"
+          - name: CHATBOT_API_URL
+            value: "http://chatbot-service:6000"
+
 ---
-# New Fraud API Deployment
+
+# 2. FRAUD AI DEPLOYMENT (Python)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: shopeasy-fraud
-...
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-app
+  template:
+    metadata:
+      labels:
+        app: fraud-app
+    spec:
+      containers:
+      - name: fraud-api
+        image: shopeasy-fraud:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5001
+
 ---
-# New Chatbot Deployment
+
+# 3. CHATBOT API DEPLOYMENT (Python)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: shopeasy-chatbot
-...
-
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatbot-app
+  template:
+    metadata:
+      labels:
+        app: chatbot-app
+    spec:
+      containers:
+      - name: chatbot-api
+        image: shopeasy-chatbot:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 6000
