@@ -14,7 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/chat', chat);
+app.post('/chat', chat.pythonapi);
 
 
 function generateFraudFeatures(amount) {
