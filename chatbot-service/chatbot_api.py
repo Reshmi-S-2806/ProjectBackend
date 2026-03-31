@@ -10,7 +10,7 @@ CORS(app) # Ensures your Angular frontend can talk to this Python API
 # 1. Configure Gemini AI
 # Make sure GEMINI_API_KEY is in your k8s/deployment.yaml
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
