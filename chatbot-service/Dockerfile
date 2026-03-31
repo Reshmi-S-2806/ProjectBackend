@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
 
 # Copy your script and your local FAQ file
 COPY chatbot_api.py .
-COPY faq.json .
+
 
 # Expose the port (matching your app.run port)
 EXPOSE 6000
