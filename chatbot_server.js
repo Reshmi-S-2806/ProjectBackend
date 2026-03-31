@@ -93,7 +93,7 @@ const pythonapi = async (req, res) => {
     try {
         // 2. Forward the request to your Python Chatbot Service (running on port 6000)
         // Ensure the URL matches your Kubernetes Service name or localhost
-        const response = await axios.post('http://localhost:6000/chat', {
+        const response = await axios.post('http://chatbot-service:6000/chat', {
             message: userText 
         });
 
