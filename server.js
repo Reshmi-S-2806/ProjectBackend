@@ -7,14 +7,14 @@ const cors = require('cors');
 const { body, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
-const chat = require('./chatbot_server');
+const pythonapi = require('./chatbot_server');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/chat', chat.pythonapi);
+app.post('/chat', pythonapi);
 
 
 function generateFraudFeatures(amount) {
