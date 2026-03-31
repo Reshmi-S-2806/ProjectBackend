@@ -566,7 +566,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 async function checkFraud(features) {
 
     const response = await axios.post(
-        "http://127.0.0.1:5000/predict",
+        "http://fraud-service:5001/predict",
         features
     );
 
