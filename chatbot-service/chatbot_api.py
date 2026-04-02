@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Database & API Config
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:root@localhost:5432/shopeasy")
+DATABASE_URL = os.getenv("DATABASE_URL")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
