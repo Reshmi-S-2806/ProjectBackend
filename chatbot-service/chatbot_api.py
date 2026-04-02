@@ -7,107 +7,65 @@ import google.generativeai as genai
 app = Flask(__name__)
 CORS(app)
 
-# =========================
-# ENV VARIABLES (DEBUG)
-# =========================
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Database & API Config
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:root@localhost:5432/shopeasy")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-print("DATABASE_URL:", DATABASE_URL)
-print("GEMINI_API_KEY:", GEMINI_API_KEY)
-
-# =========================
-# GEMINI CONFIG
-# =========================
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel('gemini-flash-latest')
 else:
     model = None
-    print("⚠️ GEMINI_API_KEY is missing!")
 
-# =========================
-# DATABASE CONNECTION
-# =========================
 def get_db_connection():
-    if not DATABASE_URL:
-        raise Exception("DATABASE_URL is not set")
-
-    url = DATABASE_URL
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
-
+    # Fix for Heroku/Docker postgres naming
+    url = DATABASE_URL.replace("postgres://", "postgresql://", 1) if DATABASE_URL.startswith("postgres://") else DATABASE_URL
     return psycopg2.connect(url)
 
-# =========================
-# CHAT API
-# =========================
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
         data = request.get_json()
-        user_query = data.get('message') if data else None
-
-        print("Incoming query:", user_query)
+        user_query = data.get('message', '').lower()
 
         if not user_query:
             return jsonify({"response": "I didn't catch that. Could you repeat?"})
 
-        response_text = None
-
-        # =========================
-        # STEP 1: DATABASE SEARCH
-        # =========================
+        # 1. CHECK PRODUCT STOCK (Old Logic Restored)
         try:
             conn = get_db_connection()
             cur = conn.cursor()
-
-            cur.execute(
-                "SELECT answer FROM chatbot_faqs WHERE question ILIKE %s LIMIT 1",
-                (f"%{user_query}%",)
-            )
-
-            result = cur.fetchone()
-
-            if result:
-                response_text = result[0]
-                print("DB Response:", response_text)
+            cur.execute("SELECT name, stock_quantity FROM products")
+            products = cur.fetchall()
+            
+            for name, stock in products:
+                if name.lower() in user_query:
+                    if stock > 0:
+                        return jsonify({"response": f"Yes, {name} is in stock! You can order it now."})
+                    else:
+                        return jsonify({"response": f"Sorry, {name} is out of stock. Check back in 2 days."})
+            
+            # 2. CHECK FAQ TABLE (Database version of your JSON)
+            cur.execute("SELECT answer FROM chatbot_faqs WHERE %s ILIKE CONCAT('%%', question, '%%') LIMIT 1", (user_query,))
+            faq_result = cur.fetchone()
+            if faq_result:
+                return jsonify({"response": faq_result[0]})
 
             cur.close()
             conn.close()
-
         except Exception as e:
-            print("Database error:", str(e))
+            print(f"Database/Stock Error: {e}")
 
-        # =========================
-        # STEP 2: GEMINI FALLBACK
-        # =========================
-        if not response_text:
-            if not model:
-                return jsonify({
-                    "response": "AI service not configured properly."
-                })
-
-            try:
-                prompt = f"You are the AI assistant for ShopEasy. User asks: {user_query}"
-                gen_response = model.generate_content(prompt)
-
-                response_text = gen_response.text if gen_response else "No response from AI"
-                print("Gemini Response:", response_text)
-
-            except Exception as e:
-                print("Gemini error:", str(e))
-                response_text = "I'm having trouble connecting to AI service."
-
-        return jsonify({"response": response_text})
+        # 3. GEMINI FALLBACK (If not in Stock or FAQ)
+        if model:
+            prompt = f"You are ShopEasy AI. Answer concisely: {user_query}"
+            gen_response = model.generate_content(prompt)
+            return jsonify({"response": gen_response.text})
+        
+        return jsonify({"response": "I'm not sure about that. Try asking about products or payments."})
 
     except Exception as e:
-        print("Chat API Error:", str(e))
-        return jsonify({"response": "Internal server error"}), 500
+        return jsonify({"response": "Internal Server Error"}), 500
 
-
-# =========================
-# RUN APP
-# =========================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6000, debug=True)
+    app.run(host='0.0.0.0', port=6000)
