@@ -90,22 +90,23 @@ const pythonapi = async (req, res) => {
     }
 
     try {
-        // FIX: Remove the early res.json({userText}) that was here
-        
-        // Use 'http://localhost:6000/chat' for local testing
-        // Use 'http://chatbot-service:6000/chat' for Kubernetes
-        const response = await axios.post('http://chatbot-service:6000/chat', {
+        // Switch between localhost (local dev) or chatbot-service (K8s)
+        const targetUrl = process.env.NODE_ENV === 'production' 
+            ? 'http://chatbot-service:6000/chat' 
+            : 'http://localhost:6000/chat';
+
+        const response = await axios.post(targetUrl, {
             message: userText 
         });
 
-        // FIX: Map Python's 'response' key to Angular's 'reply' key
+        // We return 'reply' so your Angular frontend doesn't break
         res.json({ 
             reply: response.data.response 
         });
 
     } catch (error) {
-        console.error('Chatbot Bridge Error:', error.message);
-        res.status(500).json({ error: "Chatbot service unavailable" });
+        console.error('Bridge Error:', error.message);
+        res.status(500).json({ reply: "Service temporarily unavailable." });
     }
 };
 
