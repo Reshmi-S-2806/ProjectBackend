@@ -92,7 +92,7 @@ app.use(express.json());
 // =========================
 // 🌐 SERVICE URL CONFIG
 // =========================
-const CHATBOT_URL = process.env.CHATBOT_URL || "http://localhost:6000/chat";
+const CHATBOT_URL = process.env.CHATBOT_URL || "http://chatbot-service:6000/chat";
 
 console.log("Using Chatbot URL:", CHATBOT_URL);
 
@@ -108,7 +108,7 @@ app.post("/chat", async (req, res) => {
     }
 
     try {
-        const response = await axios.post(CHATBOT_URL, {
+        const response = await axios.post(CHATBOT_API_URL, {
             message: userText
         }, {
             timeout: 5000   // ✅ prevents hanging
