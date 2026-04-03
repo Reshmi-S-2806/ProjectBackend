@@ -7,94 +7,111 @@ import google.generativeai as genai
 app = Flask(__name__)
 CORS(app)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# =========================
+# 🔐 CONFIG (SET THESE)
+# =========================
+DATABASE_URL = os.getenv("DATABASE_URL")  # Supabase URL
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# ✅ FIXED MODEL NAME
+# =========================
+# 🤖 GEMINI SETUP
+# =========================
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel("gemini-1.5-flash")
 else:
     model = None
 
-def get_db_connection():
-    url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    return psycopg2.connect(url)
+# =========================
+# 🛢️ DB CONNECTION
+# =========================
+def get_connection():
+    try:
+        url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(url)
+    except Exception as e:
+        print("DB CONNECTION ERROR:", e)
+        return None
 
-@app.route('/chat', methods=['POST'])
+# =========================
+# 💬 CHAT API
+# =========================
+@app.route("/chat", methods=["POST"])
 def chat():
     try:
         data = request.get_json()
-        user_query = data.get('message', '').lower()
+        user_message = data.get("message", "").lower()
 
-        if not user_query:
-            return jsonify({"response": "Please enter a message."})
+        if not user_message:
+            return jsonify({"reply": "Please enter a message."})
 
         # =========================
-        # 1. PRODUCT STOCK CHECK
+        # 1️⃣ PRODUCT STOCK CHECK
         # =========================
         try:
-            conn = get_db_connection()
-            cur = conn.cursor()
+            conn = get_connection()
+            if conn:
+                cur = conn.cursor()
 
-            cur.execute("SELECT name, stock_quantity FROM products")
-            products = cur.fetchall()
+                cur.execute("SELECT name, stock_quantity FROM products")
+                products = cur.fetchall()
 
-            for name, stock in products:
-                if name.lower() in user_query:
+                for name, stock in products:
+                    if name.lower() in user_message:
+                        cur.close()
+                        conn.close()
+
+                        if stock > 0:
+                            return jsonify({"reply": f"{name} is available in stock."})
+                        else:
+                            return jsonify({"reply": f"{name} is out of stock."})
+
+                # =========================
+                # 2️⃣ FAQ TABLE (Supabase)
+                # =========================
+                cur.execute("""
+                    SELECT answer FROM chatbot_faqs
+                    WHERE question ILIKE %s
+                    LIMIT 1
+                """, (f"%{user_message}%",))
+
+                faq = cur.fetchone()
+
+                if faq:
                     cur.close()
                     conn.close()
+                    return jsonify({"reply": faq[0]})
 
-                    if stock > 0:
-                        return jsonify({"response": f"{name} is available in stock."})
-                    else:
-                        return jsonify({"response": f"{name} is out of stock."})
-
-            # =========================
-            # 2. FAQ FIXED QUERY ✅
-            # =========================
-            cur.execute("""
-                SELECT answer FROM chatbot_faqs
-                WHERE question ILIKE %s
-                LIMIT 1
-            """, (f"%{user_query}%",))
-
-            faq_result = cur.fetchone()
-
-            if faq_result:
                 cur.close()
                 conn.close()
-                return jsonify({"response": faq_result[0]})
-
-            cur.close()
-            conn.close()
 
         except Exception as e:
             print("DB ERROR:", e)
 
         # =========================
-        # 3. GEMINI FALLBACK
+        # 3️⃣ GEMINI FALLBACK
         # =========================
         if model:
             try:
-                prompt = f"You are ShopEasy AI. Answer clearly and concisely:\n{user_query}"
-                gen_response = model.generate_content(prompt)
+                prompt = f"You are ShopEasy assistant. Answer clearly:\n{user_message}"
+                response = model.generate_content(prompt)
 
-                return jsonify({
-                    "response": gen_response.text
-                })
+                return jsonify({"reply": response.text})
 
             except Exception as e:
-                print("Gemini Error:", e)
+                print("Gemini ERROR:", e)
 
         return jsonify({
-            "response": "Sorry, I couldn't find an answer."
+            "reply": "Sorry, I couldn't understand your query."
         })
 
     except Exception as e:
-        print("Server Error:", e)
-        return jsonify({"response": "Internal Server Error"}), 500
+        print("SERVER ERROR:", e)
+        return jsonify({"reply": "Internal Server Error"}), 500
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6000)
+# =========================
+# 🚀 RUN SERVER
+# =========================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=6000, debug=True)
