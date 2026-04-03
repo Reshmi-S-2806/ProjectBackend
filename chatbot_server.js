@@ -89,7 +89,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// =========================
+// 🌐 SERVICE URL CONFIG
+// =========================
+const CHATBOT_URL = process.env.CHATBOT_URL || "http://localhost:6000/chat";
+
+console.log("Using Chatbot URL:", CHATBOT_URL);
+
+// =========================
+// 💬 CHAT ROUTE
+// =========================
 app.post("/chat", async (req, res) => {
+
     const userText = req.body.message;
 
     if (!userText) {
@@ -97,21 +108,33 @@ app.post("/chat", async (req, res) => {
     }
 
     try {
-        const response = await axios.post("http://localhost:6000/chat", {
+        const response = await axios.post(CHATBOT_URL, {
             message: userText
+        }, {
+            timeout: 5000   // ✅ prevents hanging
         });
 
-        res.json({
-            reply: response.data.reply   // ✅ MATCH FLASK
+        return res.json({
+            reply: response.data.reply
         });
 
     } catch (error) {
-        console.error("Node ERROR:", error.message);
 
-        res.status(500).json({
-            reply: "Chatbot service error."
+        console.error("Node → Flask ERROR:");
+        console.error("Message:", error.message);
+        console.error("Code:", error.code);
+
+        return res.status(500).json({
+            reply: "Chatbot service unavailable."
         });
     }
+});
+
+// =========================
+// 🚀 START SERVER
+// =========================
+app.listen(30002, () => {
+    console.log("Node server running on port 30002");
 });
 
 app.listen(30002, () => {
