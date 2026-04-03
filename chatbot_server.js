@@ -80,26 +80,9 @@
 // //     console.log("Chatbot server running on port 4000");
 // // });
 // module.exports = chat
-const express = require("express");
-const cors = require("cors");
 const axios = require("axios");
 
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// =========================
-// 🌐 SERVICE URL CONFIG
-// =========================
-const CHATBOT_URL = process.env.CHATBOT_URL || "http://chatbot-service:6000/chat";
-
-console.log("Using Chatbot URL:", CHATBOT_URL);
-
-// =========================
-// 💬 CHAT ROUTE
-// =========================
-app.post("/chat", async (req, res) => {
+const pythonapi = async (req, res) => {
 
     const userText = req.body.message;
 
@@ -108,10 +91,10 @@ app.post("/chat", async (req, res) => {
     }
 
     try {
+        const CHATBOT_URL = process.env.CHATBOT_URL || "http://localhost:6000/chat";
+
         const response = await axios.post(CHATBOT_API_URL, {
             message: userText
-        }, {
-            timeout: 5000   // ✅ prevents hanging
         });
 
         return res.json({
@@ -119,14 +102,12 @@ app.post("/chat", async (req, res) => {
         });
 
     } catch (error) {
-
-        console.error("Node → Flask ERROR:");
-        console.error("Message:", error.message);
-        console.error("Code:", error.code);
+        console.error("ERROR:", error.message);
 
         return res.status(500).json({
             reply: "Chatbot service unavailable."
         });
     }
-});
+};
 
+module.exports = pythonapi;  // ✅ MUST BE FUNCTION
