@@ -8,27 +8,36 @@ app = Flask(__name__)
 CORS(app)
 
 # =========================
-# 🔐 CONFIG (SET THESE)
+# 🔐 ENV VARIABLES
 # =========================
-DATABASE_URL = os.getenv("DATABASE_URL")  # Supabase URL
+DATABASE_URL = os.getenv("DATABASE_URL")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+print("DATABASE_URL:", DATABASE_URL)
+print("GEMINI KEY:", "SET" if GEMINI_API_KEY else "NOT SET")
 
 # =========================
 # 🤖 GEMINI SETUP
 # =========================
+model = None
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    model = None
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+    except Exception as e:
+        print("Gemini Init Error:", e)
 
 # =========================
 # 🛢️ DB CONNECTION
 # =========================
 def get_connection():
     try:
+        if not DATABASE_URL:
+            raise Exception("DATABASE_URL not set")
+
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(url)
+
     except Exception as e:
         print("DB CONNECTION ERROR:", e)
         return None
@@ -46,7 +55,7 @@ def chat():
             return jsonify({"reply": "Please enter a message."})
 
         # =========================
-        # 1️⃣ PRODUCT STOCK CHECK
+        # 1️⃣ PRODUCT STOCK
         # =========================
         try:
             conn = get_connection()
@@ -67,7 +76,7 @@ def chat():
                             return jsonify({"reply": f"{name} is out of stock."})
 
                 # =========================
-                # 2️⃣ FAQ TABLE (Supabase)
+                # 2️⃣ FAQ TABLE
                 # =========================
                 cur.execute("""
                     SELECT answer FROM chatbot_faqs
@@ -93,7 +102,7 @@ def chat():
         # =========================
         if model:
             try:
-                prompt = f"You are ShopEasy assistant. Answer clearly:\n{user_message}"
+                prompt = f"Answer clearly: {user_message}"
                 response = model.generate_content(prompt)
 
                 return jsonify({"reply": response.text})
@@ -111,7 +120,7 @@ def chat():
 
 
 # =========================
-# 🚀 RUN SERVER
+# 🚀 RUN
 # =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=6000, debug=True)
+    app.run(host="0.0.0.0", port=6000)
